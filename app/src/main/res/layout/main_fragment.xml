@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.main.WeatherMainFragment">
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+    <TextView
+        android:id="@+id/cityname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CityName" />
+
+    <TextView
+        android:id="@+id/citycountry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="citycountry" />
+
+    <TextView
+        android:id="@+id/citylongitude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="citylongitude" />
+
+
+    <TextView
+        android:id="@+id/citylatitutude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="citylatitude" />
+
+
+    <TextView
+        android:id="@+id/citysunrise"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="citysunrise" />
+
+
+    <TextView
+        android:id="@+id/citysunSet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="citysunset"/>
+
+
+    <TextView
+        android:id="@+id/currenttemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="currenttemp" />
+
+
+    <TextView
+        android:id="@+id/maxtemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="maxtemp" />
+
+    <TextView
+        android:id="@+id/mintemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="mintemp" />
+
+
+    <TextView
+        android:id="@+id/feelsliketemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="feelsliketemp" />
+
+    <TextView
+        android:id="@+id/humidity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="humidity" />
+
+
+    <TextView
+        android:id="@+id/pressure"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="pressure" />
+
+
+    <TextView
+        android:id="@+id/cloudforecast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="cloudforecast" />
+
+
+    <TextView
+        android:id="@+id/visibility"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="visibility" />
+
+
+    <TextView
+        android:id="@+id/percipitation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="precipitation" />
+
+    <TextView
+        android:id="@+id/windspeed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="windspeed" />
+
+    <TextView
+        android:id="@+id/direction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="direction" />
+
+
+    <TextView
+        android:id="@+id/weather"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="weather" />
+
+
+    <TextView
+        android:id="@+id/lastUpdate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="lastUpdate" />
+
+    </LinearLayout>
+
+</ScrollView>
