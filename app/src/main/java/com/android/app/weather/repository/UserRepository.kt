@@ -21,10 +21,8 @@ import java.util.concurrent.TimeUnit
 class UserRepository(val context: Context) {
 
     fun fetchFromDb(latitude: String, longitude: String) {
-        Logger.info("fetchFromDV")
-
         AppExecutors.getInstance().diskIO().execute() {
-            val weatherTableList = WeatherDb.getInstance(context).dao.getWeatherInfo("%".plus(latitude).plus("%"), "%".plus(longitude).plus("%"))
+            val weatherTableList = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
             if (weatherTableList == null) {
                 Logger.info("weather is null")
                 fetchFromNetwork(latitude, longitude);
@@ -42,8 +40,7 @@ class UserRepository(val context: Context) {
             ).build();
 
         val weatherService: WeatherApi = retrofit.create(WeatherApi::class.java);
-        Logger.info("user repository latitude in ==="+latitude)
-        Logger.info("user repository latitude==="+longitude)
+
 
 
         val call: Call<WeatherServerResponse> =

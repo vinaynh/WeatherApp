@@ -44,10 +44,8 @@ class WeatherMainFragment : Fragment() {
             longitude = arguments.getString("longitude", "")
         }
 
-        Logger.info("In Fragment latitude" + latitude);
-        Logger.info("In Fragment longitude" + longitude);
-
         if (latitude == null || longitude == null) {
+            Logger.info("latitude and longitude is null in fragmnent")
             requireActivity().finish()
             return
         }
@@ -57,7 +55,7 @@ class WeatherMainFragment : Fragment() {
 
         // Create the observer which updates the UI.
         val nameObserver = Observer<WeatherUser> { WeatherTable ->
-            Log.i("okhttp", "" + WeatherTable.city.mCityId);
+            Logger.info(" "+ WeatherTable.city.mCityId);
         }
 
         viewModel.weather.observe(this, nameObserver)

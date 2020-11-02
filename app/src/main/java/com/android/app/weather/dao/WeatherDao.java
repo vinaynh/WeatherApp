@@ -15,8 +15,8 @@ public interface WeatherDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(WeatherUser weather);
 
-    @Query("SELECT * FROM Weather WHERE lat LIKE :latitude AND lon LIKE :longitude LIMIT 1")
-    Weather getWeatherInfo(String latitude, String longitude);
+    @Query("SELECT * FROM Weather WHERE :latitude LIKE (lat || '%')  AND :longtitude LIKE (lon || '%')  LIMIT 1")
+    WeatherUser getWeatherInfo(String latitude, String longtitude);
 
 
 }

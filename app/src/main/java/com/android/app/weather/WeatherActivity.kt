@@ -16,7 +16,7 @@ class WeatherActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-     val REQUEST_CODE = 100
+    val REQUEST_CODE = 100
 
     private  var latitude : Double = 0.0;
 
@@ -50,8 +50,8 @@ class WeatherActivity : AppCompatActivity() {
                     finish()
                     return@addOnSuccessListener
                 }
-                    latitude = location.latitude;
-                     longitude = location.longitude;
+                latitude = location.latitude;
+                longitude = location.longitude;
 
 
                 runOnUiThread {
@@ -67,26 +67,11 @@ class WeatherActivity : AppCompatActivity() {
                     }
 
                 }
-                Logger.info( "latitude=== on success"+latitude)
-                Logger.info("longitude=== on success"+longitude)
 
             }.addOnFailureListener {
                 Logger.error("Failed to get last location")
             }
 
-
-/*        Logger.info( "latitude==="+latitude)
-        Logger.info("longitude==="+longitude)
-        if (savedInstanceState == null) {
-            val mainFragment = WeatherMainFragment.newInstance();
-            val bundle = Bundle();
-            bundle.putString("latitude", "%".plus(latitude.toString()).plus("%"))
-            bundle.putString("longitude","%".plus(longitude.toString()).plus("%"))
-            mainFragment.arguments = bundle
-            supportFragmentManager.beginTransaction()
-                    .replace(R.id.container, mainFragment)
-                    .commitNow()
-        }*/
     }
 
     fun checkLocationPermission() {
@@ -102,7 +87,7 @@ class WeatherActivity : AppCompatActivity() {
 
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
-                100)
+                REQUEST_CODE)
             return
         }
 
