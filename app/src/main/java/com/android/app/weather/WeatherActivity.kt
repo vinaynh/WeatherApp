@@ -18,9 +18,10 @@ class WeatherActivity : AppCompatActivity() {
 
     val REQUEST_CODE = 100
 
-    private  var latitude : Double = 0.0;
+    private var latitude: Double = 0.0;
+    private var longitude: Double = 0.0;
 
-    private  var longitude : Double = 0.0;
+    private var savedInstanceState: Bundle? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,57 +39,69 @@ class WeatherActivity : AppCompatActivity() {
         //Use workmanager to set periodic work request with wifi constraint to fetch weather information from background
         //Update logic to query network request only once in 2 hrs
 
-        checkLocationPermission();
+        this.savedInstanceState = savedInstanceState
+        checkLocationPermission()
+
+    }
+
+    fun addWeatherFragment() {
+        runOnUiThread {
+
+            if (savedInstanceState == null) {
+                val mainFragment = WeatherMainFragment.newInstance();
+                val bundle = Bundle();
+                bundle.putString("latitude", latitude.toString())
+                bundle.putString("longitude", longitude.toString())
+                mainFragment.arguments = bundle
+                supportFragmentManager.beginTransaction()
+                        .replace(R.id.container, mainFragment)
+                        .commitNow()
+            }
+        }
+    }
+
+    fun checkLastKnownLocation() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Logger.info("No permission to get last known location")
+            finish()
+            return
+        }
         fusedLocationClient.lastLocation
-            .addOnSuccessListener { location : Location? ->
+                .addOnSuccessListener { location: Location? ->
 
-                if (location == null) {
-                    Logger.info("location is null")
-                    finish()
-                    return@addOnSuccessListener
-                }
-                latitude = location.latitude;
-                longitude = location.longitude;
-
-
-                runOnUiThread {
-                    if (savedInstanceState == null) {
-                        val mainFragment = WeatherMainFragment.newInstance();
-                        val bundle = Bundle();
-                        bundle.putString("latitude", latitude.toString())
-                        bundle.putString("longitude",longitude.toString())
-                        mainFragment.arguments = bundle
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.container, mainFragment)
-                            .commitNow()
+                    if (location == null) {
+                        Logger.info("location is null")
+                        finish()
+                        return@addOnSuccessListener
                     }
+                    latitude = location.latitude;
+                    longitude = location.longitude;
+                    addWeatherFragment()
 
+                }.addOnFailureListener {
+                    Logger.error("Failed to get last location")
+                    finish()
                 }
-
-            }.addOnFailureListener {
-                Logger.error("Failed to get last location")
-            }
 
     }
 
     fun checkLocationPermission() {
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
         ) {
-
             ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
-                REQUEST_CODE)
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                    REQUEST_CODE)
             return
+        } else {
+            checkLastKnownLocation()
         }
 
     }
@@ -96,14 +109,14 @@ class WeatherActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
-            REQUEST_CODE-> {
+            REQUEST_CODE -> {
                 if ((grantResults.isNotEmpty() &&
-                            grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                                grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     // Permission is granted. Continue
-                    Logger.info( "permission granted")
-
+                    Logger.info("permission granted")
+                    checkLastKnownLocation()
                 } else {
-                    Logger.info( "permission is denied")
+                    Logger.info("permission is denied")
                     finish();
                 }
                 return

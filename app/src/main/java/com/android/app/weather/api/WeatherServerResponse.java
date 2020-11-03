@@ -31,7 +31,7 @@ import org.simpleframework.xml.Root;
 //Example Response end
 */
 
-@Root(name = "current")
+@Root(name = "current" ,strict = false)
 public class WeatherServerResponse {
 
     @Element(name = "city")

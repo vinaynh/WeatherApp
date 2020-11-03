@@ -2,6 +2,7 @@ package com.android.app.weather.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.android.app.weather.AppExecutors
 import com.android.app.weather.api.WeatherApi
 import com.android.app.weather.api.WeatherServerResponse
@@ -20,12 +21,17 @@ import java.util.concurrent.TimeUnit
 
 class UserRepository(val context: Context) {
 
+    val weatherInDB = MutableLiveData<WeatherUser>()
+
     fun fetchFromDb(latitude: String, longitude: String) {
         AppExecutors.getInstance().diskIO().execute() {
-            val weatherTableList = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
-            if (weatherTableList == null) {
+            val weatherRecord = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
+            if (weatherRecord == null) {
                 Logger.info("weather is null")
                 fetchFromNetwork(latitude, longitude);
+            } else {
+                Logger.info("fetchFromDB")
+                weatherInDB.postValue(weatherRecord)
             }
         }
     }
@@ -61,11 +67,9 @@ class UserRepository(val context: Context) {
                     if (responseBodyCurrent != null) {
                         Log.i("okhttp", "city weather insertion" + responseBodyCurrent.city.mName)
                         WeatherDb.getInstance(context).dao.insert(
-                            mapResponseToDbColumn(
-                                responseBodyCurrent
-                            )
+                            mapResponseToDbColumn(responseBodyCurrent)
                         )
-
+                        weatherInDB.postValue(WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude))
                     }
                 }
             }
@@ -88,7 +92,7 @@ class UserRepository(val context: Context) {
     }
 
     fun mapResponseToDbColumn(serverResponseBody: WeatherServerResponse?): WeatherUser {
-        val city: City =
+        val city =
             City(
                 serverResponseBody?.city?.mId,
                 serverResponseBody?.city?.mName,
@@ -99,31 +103,31 @@ class UserRepository(val context: Context) {
                 serverResponseBody?.mCity?.mSun?.mSunRise,
                 serverResponseBody?.mCity?.mSun?.mSunSet
             )
-        val clouds: Clouds =
+        val clouds =
             Clouds(
                 serverResponseBody?.mCloud?.mName,
                 serverResponseBody?.mCloud?.mValue
             )
-        val feelsLike: FeelsLike =
+        val feelsLike =
             FeelsLike(
                 serverResponseBody?.mFeelsLike?.mValue,
                 serverResponseBody?.mFeelsLike?.mUnit
             )
-        val humidity: Humidity =
+        val humidity =
             Humidity(
                 serverResponseBody?.mHumidity?.mValue,
                 serverResponseBody?.mHumidity?.mUnit
             )
-        val lastUpdate: LastUpdate =
+        val lastUpdate =
             LastUpdate(serverResponseBody?.mLastUpdate?.mValue)
         val precipitation: Precipitation =
             Precipitation(serverResponseBody?.mPrecipitation?.mMode)
-        val pressure: Pressure =
+        val pressure =
             Pressure(
                 serverResponseBody?.mPressure?.mValue,
                 serverResponseBody?.mPressure?.mUnit
             )
-        val temperature: Temperature =
+        val temperature =
             Temperature(
                 serverResponseBody?.mTemperature?.mCurrentTemp,
                 serverResponseBody?.mTemperature?.mMaxTemp,
@@ -131,9 +135,9 @@ class UserRepository(val context: Context) {
                 ,
                 serverResponseBody?.mTemperature?.mUnit
             )
-        val visiblity: Visibility =
+        val visiblity =
             Visibility((serverResponseBody?.mVisibility?.mValue))
-        val wind: Wind =
+        val wind =
             Wind(
                 serverResponseBody?.mWind?.mSpeed?.mValue,
                 serverResponseBody?.mWind?.mSpeed?.mUnit,
@@ -144,7 +148,7 @@ class UserRepository(val context: Context) {
                 serverResponseBody?.mWind?.mDirection?.mCode,
                 serverResponseBody?.mWind?.mDirection?.mName
             )
-        val weather: Weather =
+        val weather =
             Weather(
                 serverResponseBody?.mWeather?.mNumber,
                 serverResponseBody?.mWeather?.mValue,
