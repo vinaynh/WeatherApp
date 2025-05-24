@@ -3,13 +3,24 @@ package com.android.app.weather
 import android.Manifest
 import android.content.pm.PackageManager
 import android.location.Location
+import android.Manifest
+import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.android.app.weather.logger.Logger
 import com.android.app.weather.ui.main.WeatherMainFragment
+import com.android.app.weather.worker.WeatherUpdateWorker
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import java.util.concurrent.TimeUnit
 
 
 class WeatherActivity : AppCompatActivity() {
@@ -65,7 +76,8 @@ class WeatherActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Logger.info("No permission to get last known location")
+            Logger.warn("checkLastKnownLocation: Permission not granted. This should have been caught by checkLocationPermission.")
+            Toast.makeText(this, "Location permission not available. Closing app.", Toast.LENGTH_LONG).show()
             finish()
             return
         }
@@ -73,16 +85,19 @@ class WeatherActivity : AppCompatActivity() {
                 .addOnSuccessListener { location: Location? ->
 
                     if (location == null) {
-                        Logger.info("location is null")
+                        Logger.warn("fusedLocationClient.lastLocation success, but location is null.")
+                        Toast.makeText(this, "Unable to retrieve current location. Closing app.", Toast.LENGTH_LONG).show()
                         finish()
                         return@addOnSuccessListener
                     }
                     latitude = location.latitude;
                     longitude = location.longitude;
                     addWeatherFragment()
+                    schedulePeriodicWeatherUpdates() // Schedule background updates
 
-                }.addOnFailureListener {
-                    Logger.error("Failed to get last location")
+                }.addOnFailureListener { exception ->
+                    Logger.error("fusedLocationClient.lastLocation failed: ${exception.message}", exception)
+                    Toast.makeText(this, "Failed to get location. Closing app.", Toast.LENGTH_LONG).show()
                     finish()
                 }
 
@@ -113,15 +128,39 @@ class WeatherActivity : AppCompatActivity() {
                 if ((grantResults.isNotEmpty() &&
                                 grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     // Permission is granted. Continue
-                    Logger.info("permission granted")
+                    Logger.info("onRequestPermissionsResult: Permission granted.")
                     checkLastKnownLocation()
                 } else {
-                    Logger.info("permission is denied")
+                    Logger.warn("onRequestPermissionsResult: Permission denied.")
+                    Toast.makeText(this, "Location permission denied. Closing app.", Toast.LENGTH_LONG).show()
                     finish();
                 }
                 return
             }
 
         }
+    }
+
+    private fun schedulePeriodicWeatherUpdates() {
+        Logger.info("Attempting to schedule periodic weather updates.")
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.UNMETERED) // Wi-Fi
+            .build()
+
+        val weatherUpdateRequest =
+            PeriodicWorkRequestBuilder<WeatherUpdateWorker>(
+                repeatInterval = 6, // Repeat every 6 hours
+                repeatIntervalTimeUnit = TimeUnit.HOURS
+            )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "WeatherUpdateWorkerPeriodic", // Unique name for the work
+            ExistingPeriodicWorkPolicy.KEEP, // Keep the existing work if it's already scheduled
+            weatherUpdateRequest
+        )
+        Logger.info("Periodic weather update request enqueued.")
     }
 }

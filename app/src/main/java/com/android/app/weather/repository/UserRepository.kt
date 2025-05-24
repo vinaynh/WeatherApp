@@ -21,23 +21,48 @@ import java.util.concurrent.TimeUnit
 
 class UserRepository(val context: Context) {
 
+    // LiveData holding the weather information, observed by WeatherViewModel.
     val weatherInDB = MutableLiveData<WeatherUser>()
 
+    /**
+     * Fetches weather data. It first attempts to retrieve data from the local database.
+     * If data is not found in the database, it triggers a network request.
+     *
+     * @param latitude The latitude for which to fetch weather data.
+     * @param longitude The longitude for which to fetch weather data.
+     */
     fun fetchFromDb(latitude: String, longitude: String) {
+        // Perform database operation on a background thread.
         AppExecutors.getInstance().diskIO().execute() {
-            val weatherRecord = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
-            if (weatherRecord == null) {
-                Logger.info("weather is null")
-                fetchFromNetwork(latitude, longitude);
-            } else {
-                Logger.info("fetchFromDB")
-                weatherInDB.postValue(weatherRecord)
+            try {
+                // Attempt to get weather information from the local database.
+                val weatherRecord = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
+                if (weatherRecord == null) {
+                    // Data not found in DB, log and fetch from network.
+                    Logger.info("Weather data for lat: $latitude, lon: $longitude not found in DB. Fetching from network.")
+                    fetchFromNetwork(latitude, longitude)
+                } else {
+                    // Data found in DB, log and post to LiveData.
+                    Logger.info("Weather data for lat: $latitude, lon: $longitude fetched from DB.")
+                    weatherInDB.postValue(weatherRecord)
+                }
+            } catch (e: Exception) {
+                Logger.error("UserRepository: Exception during fetchFromDb (getWeatherInfo) for lat: $latitude, lon: $longitude: ${e.message}", e)
+                weatherInDB.postValue(null) // Post null if DB read fails
             }
         }
     }
 
-
+    /**
+     * Fetches weather data from the OpenWeatherMap API.
+     * If successful, it maps the response to a WeatherUser entity, stores it in the database,
+     * and updates the weatherInDB LiveData by fetching the newly stored record.
+     *
+     * @param latitude The latitude for the API request.
+     * @param longitude The longitude for the API request.
+     */
     fun fetchFromNetwork(latitude: String, longitude: String) {
+        // Setup Retrofit for network call
         val retrofit: Retrofit = Retrofit.Builder().client(createOkHttpClient())
             .baseUrl("https://api.openweathermap.org").addConverterFactory(
                 SimpleXmlConverterFactory.createNonStrict(
@@ -58,20 +83,42 @@ class UserRepository(val context: Context) {
             );
 
         AppExecutors.getInstance().networkIO().execute() {
-            val serverResponse: retrofit2.Response<WeatherServerResponse>? = call.execute();
-            Logger.info("server response")
-            if (serverResponse != null) {
-                if (serverResponse.isSuccessful()) {
-                    Logger.info("response is successfull")
-                    val responseBodyCurrent: WeatherServerResponse? = serverResponse.body();
+            try {
+                val serverResponse: retrofit2.Response<WeatherServerResponse>? = call.execute()
+                Logger.info("Network response received for lat: $latitude, lon: $longitude.")
+                if (serverResponse != null && serverResponse.isSuccessful) {
+                    Logger.info("Network response successful.")
+                    val responseBodyCurrent: WeatherServerResponse? = serverResponse.body()
                     if (responseBodyCurrent != null) {
-                        Log.i("okhttp", "city weather insertion" + responseBodyCurrent.city.mName)
-                        WeatherDb.getInstance(context).dao.insert(
-                            mapResponseToDbColumn(responseBodyCurrent)
-                        )
-                        weatherInDB.postValue(WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude))
+                        Logger.info("Response body is not null. Mapping and storing data for city: ${responseBodyCurrent.city?.mName}")
+                        val weatherUserFromNetwork = mapResponseToDbColumn(responseBodyCurrent)
+                        try {
+                            WeatherDb.getInstance(context).dao.insert(weatherUserFromNetwork)
+                            Logger.info("Successfully inserted network data into DB for lat: $latitude, lon: $longitude.")
+                            // Post the newly fetched and stored data to LiveData by re-querying the database.
+                            try {
+                                val updatedWeatherRecord = WeatherDb.getInstance(context).dao.getWeatherInfo(latitude, longitude)
+                                weatherInDB.postValue(updatedWeatherRecord)
+                            } catch (e: Exception) {
+                                Logger.error("UserRepository: Exception during getWeatherInfo after insert for lat: $latitude, lon: $longitude: ${e.message}", e)
+                                weatherInDB.postValue(null)
+                            }
+                        } catch (e: Exception) {
+                            Logger.error("UserRepository: Exception during DB insert for lat: $latitude, lon: $longitude: ${e.message}", e)
+                            weatherInDB.postValue(null) // Post null if DB insert fails
+                        }
+                    } else {
+                        Logger.warn("Network response body is null for lat: $latitude, lon: $longitude.")
+                        weatherInDB.postValue(null) // Post null if response body is null
                     }
+                } else {
+                    val errorBody = serverResponse?.errorBody()?.string() ?: "Unknown error"
+                    Logger.error("Network request failed for lat: $latitude, lon: $longitude. Code: ${serverResponse?.code()}, Message: ${serverResponse?.message()}, ErrorBody: $errorBody")
+                    weatherInDB.postValue(null) // Post null if network request itself fails
                 }
+            } catch (e: Exception) {
+                Logger.error("UserRepository: Exception during network request execution for lat: $latitude, lon: $longitude: ${e.message}", e)
+                weatherInDB.postValue(null) // Post null if network call execution fails
             }
         }
     }
